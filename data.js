@@ -1,11 +1,4 @@
-/**
- * MedicationData Module
- * Contains sample data and data management functionality for medications
- */
 const MedicationData = {
-    /**
-     * Sample user profile data
-     */
     currentUser: {
         id: 'user123',
         name: "John's Profile",
@@ -21,10 +14,6 @@ const MedicationData = {
         }
     },
 
-    /**
-     * Sample medication data for demonstration
-     * Each medication has unique properties and scheduling information
-     */
     medications: [
         {
             id: '1',
@@ -164,16 +153,8 @@ const MedicationData = {
         }
     ],
 
-    /** 
-     * Medication history tracking
-     * Stores a record of when medications were taken
-     */
     medicationHistory: [],
 
-    /**
-     * Sample user profiles
-     * Can be used for multi-user functionality
-     */
     profiles: [
         {
             id: 'john123',
@@ -192,9 +173,6 @@ const MedicationData = {
         }
     ],
 
-    /**
-     * Save all data to local storage
-     */
     saveToStorage() {
         localStorage.setItem('dmrData', JSON.stringify({
             medications: this.medications,
@@ -203,9 +181,6 @@ const MedicationData = {
         }));
     },
 
-    /**
-     * Load data from local storage
-     */
     loadFromStorage() {
         const stored = localStorage.getItem('dmrData');
         if (stored) {
@@ -216,11 +191,6 @@ const MedicationData = {
         }
     },
 
-    /**
-     * Add a medication event to history
-     * @param {Object} medication - The medication that was taken
-     * @param {string} action - The action performed (taken, skipped, etc.)
-     */
     addToHistory(medication, action) {
         this.medicationHistory.unshift({
             ...medication,
@@ -230,113 +200,32 @@ const MedicationData = {
         this.saveToStorage();
     },
 
-    /**
-     * Update a medication's status
-     * @param {string} id - ID of the medication to update
-     * @param {string} status - New status to set
-     */
     updateMedicationStatus(id, status) {
-        const medication = this.medications.find(med => med.id === id);
-        if (medication) {
-            medication.status = status;
-            
+        const med = this.medications.find(m => m.id === id);
+        if (med) {
+            med.status = status;
             if (status === 'taken') {
-                this.addToHistory(medication, 'taken');
-                
-                // Schedule next dose based on frequency
-                const nextDose = new Date();
-                nextDose.setDate(nextDose.getDate() + 1); // Default to next day
-                nextDose.setHours(
-                    new Date(medication.nextDose).getHours(),
-                    new Date(medication.nextDose).getMinutes(),
-                    0, 0
-                );
-                medication.nextDose = nextDose.getTime();
+                med.stockCount--;
+                this.addToHistory(med, 'taken');
+            } else if (status === 'skipped') {
+                this.addToHistory(med, 'skipped');
             }
-            
             this.saveToStorage();
         }
     },
 
-    /**
-     * Reset medication statuses for a new day
-     */
     resetDailyMedications() {
         const now = new Date();
-        const today = now.toDateString();
-        
         this.medications.forEach(med => {
-            const medDate = new Date(med.nextDose).toDateString();
-            if (medDate === today) {
-                med.status = 'pending';
+            const medTime = new Date(med.nextDose);
+            if (medTime.toDateString() !== now.toDateString()) {
+                med.status = 'upcoming';
+                med.nextDose = new Date(now.toDateString() + ' ' + med.time).getTime();
             }
         });
-        
         this.saveToStorage();
-    },
-
-    /**
-     * Add a new medication to the list
-     * @param {Object} medication - New medication to add
-     */
-    addMedication(medication) {
-        // Generate a unique ID
-        medication.id = Date.now().toString();
-        
-        // Set defaults if not provided
-        medication.status = medication.status || 'pending';
-        medication.color = medication.color || this.getRandomColor();
-        
-        this.medications.push(medication);
-        this.saveToStorage();
-        return medication;
-    },
-
-    /**
-     * Delete a medication from the list
-     * @param {string} id - ID of medication to delete
-     */
-    deleteMedication(id) {
-        const index = this.medications.findIndex(med => med.id === id);
-        if (index !== -1) {
-            this.medications.splice(index, 1);
-            this.saveToStorage();
-            return true;
-        }
-        return false;
-    },
-
-    /**
-     * Generate a random color for medication
-     * @returns {string} A hexadecimal color code
-     */
-    getRandomColor() {
-        const colors = [
-            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', 
-            '#FFD93D', '#FF8B94', '#98B4D4', '#9B5DE5'
-        ];
-        return colors[Math.floor(Math.random() * colors.length)];
-    },
-
-    /**
-     * Initialize the data module
-     */
-    init() {
-        this.loadFromStorage();
-        
-        // Reset medications status at start of day
-        const lastReset = localStorage.getItem('lastReset');
-        const today = new Date().toDateString();
-        
-        if (lastReset !== today) {
-            this.resetDailyMedications();
-            localStorage.setItem('lastReset', today);
-        }
     }
 };
-
-// Initialize data when script loads
-MedicationData.init();
 
 // Data structure for a medication
 const MedicationSchema = {
